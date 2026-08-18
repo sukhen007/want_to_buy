@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Buy It Planner — Savings Calculator</title>
+<style>
+:root{
+  --bg:#07111f;
+  --card:rgba(15,28,48,.78);
+  --card2:rgba(20,38,64,.72);
+  --text:#f4f7fb;
+  --muted:#9cafc7;
+  --accent:#61dafb;
+  --accent2:#8b7cff;
+  --good:#55e6a5;
+  --warn:#ffc857;
+  --danger:#ff6b8a;
+  --border:rgba(255,255,255,.10);
+  --shadow:0 30px 100px rgba(0,0,0,.5);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+
+/* ULTRA BACKGROUND ANIMATION */
+@keyframes abstractBg {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+body{
+  margin:0; min-height:100vh; color:var(--text);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:
+    radial-gradient(circle at 15% 10%,rgba(97,218,251,.18),transparent 35%),
+    radial-gradient(circle at 85% 15%,rgba(139,124,255,.2),transparent 35%),
+    radial-gradient(circle at 50% 100%,rgba(85,230,165,.12),transparent 45%),
+    var(--bg);
+  background-size: 200% 200%;
+  animation: abstractBg 15s ease infinite;
+  overflow-x:hidden;
+}
+
+/* ULTRA GRID MASK ANIMATION */
+@keyframes gridPan {
+  from { transform: translateY(0); }
+  to { transform: translateY(42px); }
+}
+body:before{
+  content:""; position:fixed; inset:-100px; pointer-events:none; opacity:.25;
+  background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);
+  background-size:42px 42px;
+  mask-image:linear-gradient(to bottom,black,transparent 80%);
+  animation: gridPan 3s linear infinite;
+}
+
+/* ULTRA ORB ANIMATIONS */
+.orb{position:fixed;border-radius:50%;filter:blur(80px);pointer-events:none;opacity:.3;}
+@keyframes floatOrb1 {
+  0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  33% { transform: translate(80px, -80px) scale(1.4) rotate(45deg); }
+  66% { transform: translate(-40px, 60px) scale(0.8) rotate(-20deg); }
+}
+@keyframes floatOrb2 {
+  0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  33% { transform: translate(-90px, 90px) scale(1.5) rotate(-45deg); }
+  66% { transform: translate(50px, -40px) scale(0.9) rotate(20deg); }
+}
+.orb.one{width:280px;height:280px;background:#61dafb;top:10%;left:-100px; animation: floatOrb1 12s ease-in-out infinite;}
+.orb.two{width:320px;height:320px;background:#8b7cff;right:-120px;top:40%; animation: floatOrb2 15s ease-in-out infinite alternate;}
+
+.container{width:min(1120px,92%);margin:auto;padding:34px 0 60px; position:relative; z-index:1;}
+header{display:flex;justify-content:space-between;align-items:center;gap:20px;margin-bottom:30px}
+.brand{display:flex;align-items:center;gap:12px}
+
+/* ULTRA LOGO ANIMATION */
+@keyframes spinLogo { 0% { transform: rotate(0deg) scale(1); } 50% { transform: rotate(180deg) scale(1.1); box-shadow:0 15px 45px rgba(97,218,251,.5); } 100% { transform: rotate(360deg) scale(1); } }
+.logo{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));color:#06101d;font-weight:900;
+  box-shadow:0 10px 35px rgba(97,218,251,.25); transition: all 0.3s ease;}
+.logo:hover { animation: spinLogo 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+.brand h1{font-size:20px;margin:0}.brand p{margin:3px 0 0;color:var(--muted);font-size:12px}
+.badge{border:1px solid var(--border);background:rgba(255,255,255,.04);padding:9px 13px;border-radius:999px;color:var(--muted);font-size:12px; transition:all 0.3s;}
+.badge:hover{ background:rgba(255,255,255,.1); transform:scale(1.05); border-color:var(--accent); color:white;}
+
+.grid{display:grid;grid-template-columns:1fr 1.15fr;gap:20px;align-items:start}
+
+/* ULTRA CARD ENTRANCE & HOVER */
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(60px) scale(0.9); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.card{
+  background:linear-gradient(145deg,rgba(18,34,57,.86),rgba(8,18,32,.82));
+  border:1px solid var(--border);border-radius:26px;box-shadow:var(--shadow);
+  backdrop-filter:blur(18px);padding:24px;
+  animation: slideUpFade 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease, border-color 0.4s ease;
+}
+.card:nth-child(2) { animation-delay: 0.15s; }
+.card:hover { transform: translateY(-8px); box-shadow: 0 40px 120px rgba(0,0,0,.6), 0 0 40px rgba(97,218,251,0.1); border-color:rgba(97,218,251,0.3); }
+
+.card h3{margin:0 0 18px;font-size:18px}.section-note{color:var(--muted);font-size:12px;margin-top:-12px;margin-bottom:18px}
+
+/* ULTRA INPUT ANIMATIONS */
+.field{margin:17px 0}.labelrow{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+label{font-size:13px;color:#d8e2ef}.hint{font-size:11px;color:var(--muted)}
+.input-wrap{position:relative}
+.prefix{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--muted);font-weight:700; transition:color 0.3s;}
+input[type=number]{
+  width:100%;border:1px solid var(--border);background:rgba(0,0,0,.25);color:var(--text);
+  border-radius:14px;padding:14px 14px 14px 34px;outline:none;font-size:16px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.amount-input-wrap{position:relative;margin:9px 0 2px}
+.amount-input-wrap input{padding-right:90px}
+.input-suffix{position:absolute;right:15px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;font-weight:700;pointer-events:none; transition:all 0.3s;}
+input:hover { background:rgba(0,0,0,.4); border-color:rgba(255,255,255,.2); }
+input:focus{
+  transform: scale(1.03); 
+  border-color:var(--accent); 
+  box-shadow:0 0 0 5px rgba(97,218,251,.15), 0 15px 35px rgba(0,0,0,.4);
+  background:rgba(0,0,0,.6);
+}
+input:focus + .input-suffix, .input-wrap:focus-within .prefix { color:var(--accent); transform:translateY(-50%) scale(1.1); }
+input::-webkit-inner-spin-button{opacity:.4; transition:opacity 0.2s;}
+input:hover::-webkit-inner-spin-button{opacity:1;}
+
+/* ULTRA BUTTON ANIMATIONS */
+.mode{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:rgba(0,0,0,.25);padding:5px;border-radius:15px;margin-bottom:18px}
+.mode button{
+  border:0;background:transparent;color:var(--muted);padding:11px;border-radius:11px;cursor:pointer;font-weight:700;
+  transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); position:relative; overflow:hidden;
+}
+.mode button:not(:disabled):hover{ transform: translateY(-3px) scale(1.05); color:white; background:rgba(255,255,255,.05); box-shadow:0 10px 20px rgba(0,0,0,.3); }
+.mode button:not(:disabled):active{ transform: scale(0.95); }
+.mode button.active{
+  background:linear-gradient(135deg,rgba(97,218,251,.3),rgba(139,124,255,.3));color:white;
+  box-shadow: 0 5px 15px rgba(97,218,251,.2);
+}
+.mode button:disabled{opacity:0.3;cursor:not-allowed;}
+
+.rangebox{padding:14px 0 14px}
+.range-value{font-size:42px;font-weight:900;letter-spacing:-1px;text-align:center;margin:3px 0 10px; transition:transform 0.2s;}
+.rangebox:hover .range-value { transform:scale(1.05); color:white; }
+.range-value span{font-size:17px;color:var(--muted);font-weight:600; transition:color 0.2s;}
+
+/* ----------------------------------------------------- */
+/*  ULTRA SLIDER BARS (FULLY REDESIGNED RANGE INPUT)     */
+/* ----------------------------------------------------- */
+@keyframes trackGlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes thumbPulse {
+  0% { box-shadow: 0 0 10px var(--accent), 0 0 20px rgba(97,218,251,0.2); transform: scale(1); }
+  50% { box-shadow: 0 0 20px var(--accent), 0 0 40px var(--accent2), 0 0 60px var(--accent); transform: scale(1.05); }
+  100% { box-shadow: 0 0 10px var(--accent), 0 0 20px rgba(97,218,251,0.2); transform: scale(1); }
+}
+
+input[type=range] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 12px;
+  border-radius: 20px;
+  background: linear-gradient(90deg, rgba(97,218,251,0.1), rgba(139,124,255,0.3), rgba(85,230,165,0.2), rgba(97,218,251,0.1));
+  background-size: 300% 100%;
+  animation: trackGlow 4s linear infinite;
+  outline: none;
+  cursor: pointer;
+  box-shadow: inset 0 3px 8px rgba(0,0,0,0.6), 0 0 10px rgba(97,218,251,0.05);
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  margin: 15px 0;
+}
+
+input[type=range]:hover {
+  height: 18px;
+  background: linear-gradient(90deg, rgba(97,218,251,0.2), rgba(139,124,255,0.5), rgba(85,230,165,0.4), rgba(97,218,251,0.2));
+  background-size: 300% 100%;
+  box-shadow: inset 0 3px 8px rgba(0,0,0,0.6), 0 0 25px rgba(97,218,251,0.3);
+}
+
+/* Chrome/Safari Thumb */
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffffff, var(--accent));
+  cursor: pointer;
+  animation: thumbPulse 2s infinite;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 2px solid rgba(255,255,255,0.8);
+  position: relative;
+  z-index: 10;
+}
+input[type=range]:hover::-webkit-slider-thumb {
+  transform: scale(1.6);
+  background: #ffffff;
+  border-color: var(--accent);
+  animation: none; /* Stop pulsing on hover to show extreme glow */
+  box-shadow: 0 0 25px var(--accent), 0 0 50px var(--accent2), 0 0 80px white;
+}
+input[type=range]:active::-webkit-slider-thumb {
+  transform: scale(1.2);
+  box-shadow: 0 0 15px var(--accent), 0 0 30px var(--accent);
+}
+
+/* Firefox Thumb */
+input[type=range]::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffffff, var(--accent));
+  cursor: pointer;
+  animation: thumbPulse 2s infinite;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  border: 2px solid rgba(255,255,255,0.8);
+}
+input[type=range]:hover::-moz-range-thumb {
+  transform: scale(1.6);
+  background: #ffffff;
+  border-color: var(--accent);
+  animation: none;
+  box-shadow: 0 0 25px var(--accent), 0 0 50px var(--accent2), 0 0 80px white;
+}
+input[type=range]:active::-moz-range-thumb {
+  transform: scale(1.2);
+  box-shadow: 0 0 15px var(--accent), 0 0 30px var(--accent);
+}
+/* ----------------------------------------------------- */
+
+.range-labels{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-top:5px; transition:opacity 0.2s;}
+
+#priceWords { font-size: 11px; color: var(--accent); margin-top: 8px; font-weight: 600; letter-spacing: 0.3px; animation: textReveal 0.4s ease forwards;}
+@keyframes textReveal { from {opacity:0; transform:translateY(-5px);} to {opacity:1; transform:translateY(0);} }
+
+/* RESULT PANEL ULTRA EFFECTS */
+.result{position:relative;overflow:hidden; display:flex; flex-direction:column; align-items:center}
+@keyframes pulseGlow { 0%,100%{transform:scale(1); opacity:.5;} 50%{transform:scale(1.5); opacity:.8;} }
+.result:after{content:"";position:absolute;width:220px;height:220px;border-radius:50%;right:-100px;top:-100px;
+  background:rgba(97,218,251,.15);filter:blur(40px); animation: pulseGlow 6s ease-in-out infinite;}
+
+.visual-display{text-align:center;margin:10px 0 25px;height:120px;display:flex;flex-direction:column;justify-content:center;align-items:center}
+
+/* ULTRA EMOJI ANIMATION */
+@keyframes continuousFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); drop-shadow: 0 15px 25px rgba(0,0,0,0.4); }
+  25% { transform: translateY(-8px) rotate(-5deg); drop-shadow: -5px 25px 35px rgba(97,218,251,0.3); }
+  75% { transform: translateY(-8px) rotate(5deg); drop-shadow: 5px 25px 35px rgba(139,124,255,0.3); }
+}
+.v-emoji{font-size:72px;line-height:1; animation: continuousFloat 4s ease-in-out infinite; transform-origin:center bottom;}
+
+/* HYPER JUMP ON CHANGE */
+@keyframes extremeJump {
+  0% { transform: scale(0.1) translateY(50px) rotate(-180deg); opacity: 0; filter:blur(10px); }
+  50% { transform: scale(1.6) translateY(-40px) rotate(15deg); filter:blur(0px); }
+  70% { transform: scale(0.9) translateY(10px) rotate(-5deg); }
+  100% { transform: scale(1) translateY(0) rotate(0); opacity: 1; }
+}
+.v-emoji.jump{animation: extremeJump 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;}
+.v-text{color:var(--accent);font-weight:800;font-size:14px;letter-spacing:1px;text-transform:uppercase;margin-top:15px;opacity:0.8; text-align:center; padding:0 10px; transition:all 0.3s;}
+
+.big-result{text-align:center;padding:0 10px 20px;width:100%}
+.big-result .caption{color:var(--muted);font-size:13px}
+
+/* ULTRA TEXT ANIMATION */
+@keyframes textShine { 0% {background-position: 0% center;} 100% {background-position: 200% center;} }
+.big-number{
+  font-size:clamp(44px,7vw,72px);line-height:1;font-weight:950;letter-spacing:-2px;margin:10px 0;
+  background:linear-gradient(100deg, #fff 20%, var(--accent) 50%, #fff 80%);
+  background-size: 200% auto;
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  animation: textShine 4s linear infinite;
+  text-shadow: 0 10px 30px rgba(97,218,251,0.2);
+}
+@keyframes explosivePop {
+  0% { transform: scale(0.6) translateY(20px); filter: blur(10px); opacity:0; }
+  60% { transform: scale(1.15) translateY(-5px); filter: blur(0px); opacity:1; text-shadow: 0 20px 50px rgba(97,218,251,0.6); }
+  100% { transform: scale(1) translateY(0); opacity:1; text-shadow: 0 10px 30px rgba(97,218,251,0.2); }
+}
+.pop{animation: explosivePop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;}
+
+.big-result .sub{color:#d8e2ef;font-size:14px}
+
+/* ULTRA METRIC BOXES */
+.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:15px;width:100%}
+.metric{
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:14px;
+  transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); position:relative; overflow:hidden;
+}
+.metric:hover { 
+  transform: scale(1.06) translateY(-5px); 
+  background:rgba(255,255,255,.08); 
+  border-color:var(--accent); 
+  box-shadow:0 15px 35px rgba(0,0,0,.4), 0 0 20px rgba(97,218,251,.15); 
+}
+.metric::before {
+  content:""; position:absolute; top:0; left:-100%; width:50%; height:100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  transition: all 0.6s ease;
+}
+.metric:hover::before { left: 150%; }
+
+.metric small{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.8px;margin-bottom:5px; transition:color 0.3s;}
+.metric:hover small { color:var(--accent); }
+.metric strong{font-size:17px; transition:transform 0.3s;}
+.metric:hover strong { transform:scale(1.1); display:inline-block; }
+
+/* ULTRA BUTTONS */
+.actions{display:flex;gap:9px;margin-top:25px;width:100%}
+button.primary,button.secondary{
+  flex:1;border:0;border-radius:14px;padding:13px;cursor:pointer;font-weight:800;
+  transition:all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); position:relative; overflow:hidden;
+}
+@keyframes primeShine { 0% {background-position: 0% center;} 100% {background-position: 200% center;} }
+.primary{
+  color:#06101d;
+  background:linear-gradient(135deg, var(--accent) 0%, #9deaff 50%, var(--accent) 100%);
+  background-size: 200% auto;
+  animation: primeShine 3s linear infinite;
+  box-shadow:0 10px 25px rgba(97,218,251,.25);
+}
+.primary:hover { transform:translateY(-5px) scale(1.04); box-shadow:0 20px 40px rgba(97,218,251,.4); letter-spacing:1px; }
+.primary:active { transform:scale(0.95); }
+
+.secondary{color:#dce7f5;background:rgba(255,255,255,.06);border:1px solid var(--border)!important}
+.secondary:hover { transform:translateY(-5px) scale(1.04); background:rgba(255,255,255,.1); box-shadow:0 15px 30px rgba(0,0,0,.3); border-color:white!important; }
+.secondary:active { transform:scale(0.95); }
+
+footer{text-align:center;color:#71839a;font-size:11px;margin-top:25px; transition:color 0.3s;}
+footer:hover {color:var(--accent);}
+
+@media(max-width:800px){
+  .grid{grid-template-columns:1fr}
+  header{align-items:flex-start}.badge{display:none}
+}
+@media(max-width:500px){
+  .container{padding-top:20px}.card{padding:18px;border-radius:20px}
+  .metrics{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="orb one"></div><div class="orb two"></div>
+
+<div class="container">
+<header>
+  <div class="brand">
+    <div class="logo">₹</div>
+    <div><h1>Buy It Planner</h1><p>Calculate your exact buying plan</p></div>
+  </div>
+  <div class="badge">100% local • No data stored</div>
+</header>
+
+<div class="grid">
+  <section class="card">
+    <h3>01 · Your purchase</h3>
+    <div class="section-note">How much does it cost?</div>
+
+    <div class="field">
+      <div class="labelrow"><label>Product price</label><span class="hint">Total amount</span></div>
+      <div class="input-wrap"><span class="prefix">₹</span><input id="price" type="number" min="0" value="239000"></div>
+      <div id="priceWords"></div>
+    </div>
+    
+    <div class="rangebox" style="padding-top:5px; margin-bottom:10px;">
+      <input id="priceRange" type="range" min="0" max="1000" step="1" value="239000">
+      <div class="range-labels"><span>₹0</span><span>₹10+ Crore</span></div>
+    </div>
+
+    <h3 style="margin-top:28px">02 · Your goal</h3>
+    <div class="mode">
+      <button id="timeMode" class="active">How long will it take?</button>
+      <button id="targetMode">I choose the time</button>
+    </div>
+
+    <div class="field" style="margin-top:14px">
+      <div class="labelrow"><label>Saving frequency</label><span class="hint">Choose how you save</span></div>
+      <div class="mode" style="margin-bottom:0">
+        <button id="monthlyMode" class="active">Monthly</button>
+        <button id="dailyMode">Per day</button>
+      </div>
+    </div>
+
+    <div id="timePanel">
+      <div class="labelrow"><label>Saving amount</label><span class="hint">Type your exact saving</span></div>
+      <div class="amount-input-wrap">
+        <span class="prefix">₹</span>
+        <input id="savingInput" type="number" min="0" step="1" value="15000" aria-label="Saving amount">
+        <span class="input-suffix" id="savingSuffix">/ month</span>
+      </div>
+      <div class="rangebox">
+        <div class="range-value">₹<span id="savingDisplay">15,000</span><span id="savingUnit"> / month</span></div>
+        <input id="savingRange" type="range" min="0" step="1" value="15000">
+        <div class="range-labels"><span>₹0</span><span id="rangeMax">₹1,20,000</span></div>
+      </div>
+    </div>
+
+    <div id="targetPanel" style="display:none">
+      <div class="labelrow"><label>Target time</label><span class="hint">Type or drag</span></div>
+      <div class="amount-input-wrap">
+        <input id="targetTimeInput" type="number" min="1" max="120" step="1" value="12" aria-label="Target time">
+        <span class="input-suffix" id="targetTimeSuffix">months</span>
+      </div>
+      <div class="rangebox">
+        <div class="range-value"><span id="targetTimeDisplay">12</span> <span id="targetTimeUnit">months</span></div>
+        <input id="targetTimeRange" type="range" min="1" max="120" step="1" value="12">
+        <div class="range-labels"><span id="targetTimeMinLabel">1 month</span><span id="targetTimeMaxLabel">120 months</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card result">
+    
+    <div class="visual-display" id="visualDisplay">
+      <div class="v-emoji" id="vEmoji">🏍️</div>
+      <div class="v-text" id="vText">Motorcycle</div>
+    </div>
+
+    <div class="big-result">
+      <div class="caption" id="resultCaption">You can buy it in approximately</div>
+      <div class="big-number" id="bigNumber">16 months</div>
+      <div class="sub" id="resultSub">by saving ₹15,000 every month</div>
+      <div class="sub" id="yearResult" style="margin-top:9px;color:#9cafc7">≈ 1.33 years</div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><small>Purchase price</small><strong id="mPrice">₹2,39,000</strong></div>
+      <div class="metric"><small>Daily saving target</small><strong id="mDaily">₹500</strong></div>
+      <div class="metric"><small>Monthly saving target</small><strong id="mMonthly">₹15,000</strong></div>
+      <div class="metric"><small>Yearly saving target</small><strong id="mYearly">₹1,80,000</strong></div>
+    </div>
+
+    <div class="actions">
+      <button class="primary" id="resetBtn">Reset</button>
+      <button class="secondary" id="shareBtn">Share plan</button>
+    </div>
+  </section>
+</div>
+
+<footer>Your calculations happen in your browser. Nothing is uploaded or saved.</footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const price = $("price"), priceRange = $("priceRange");
+const savingRange = $("savingRange"), savingInput = $("savingInput");
+const targetTimeInput = $("targetTimeInput"), targetTimeRange = $("targetTimeRange");
+const vEmoji = $("vEmoji"), vText = $("vText");
+
+let mode = "time";
+let frequency = "monthly";
+let lastEmoji = "";
+
+const MAX_PRICE_SLIDER = 100000000;
+
+function numberToWords(num) {
+  if (num === 0) return "Zero Rupees";
+  const a = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+  const b = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+  const nToW = (n) => {
+    let str = "";
+    if (n > 19) { str += b[Math.floor(n / 10)] + (n % 10 ? " " + a[n % 10] : ""); }
+    else { str += a[n]; }
+    return str;
+  };
+  let word = "";
+  let cr = Math.floor(num / 10000000); num %= 10000000;
+  let lk = Math.floor(num / 100000); num %= 100000;
+  let th = Math.floor(num / 1000); num %= 1000;
+  let hn = Math.floor(num / 100); num %= 100;
+  
+  if (cr) word += nToW(cr) + " Crore ";
+  if (lk) word += nToW(lk) + " Lakh ";
+  if (th) word += nToW(th) + " Thousand ";
+  if (hn) word += nToW(hn) + " Hundred ";
+  if (num > 0) {
+    if (word !== "") word += "and ";
+    word += nToW(num);
+  }
+  return word.trim() + " Rupees";
+}
+
+const itemTiers = [
+  { m: 2, e: "🍬", t: "Toffee" },                
+  { m: 5, e: "🧷", t: "Safety Pin" },            
+  { m: 10, e: "✏️", t: "Pencil" },               
+  { m: 15, e: "🖊️", t: "Ballpoint Pen" },       
+  { m: 20, e: "☕", t: "Cup of Chai" },          
+  { m: 30, e: "🥟", t: "Samosa" },               
+  { m: 40, e: "🍜", t: "Noodles Packet" },         
+  { m: 50, e: "🧃", t: "Fruit Juice Box" },      
+  { m: 70, e: "🍞", t: "Loaf of Bread" },        
+  { m: 100, e: "🍫", t: "Chocolate Bar" },
+  { m: 120, e: "🥚", t: "Dozen Eggs" },          
+  { m: 150, e: "🥛", t: "1L Premium Milk" },     
+  { m: 200, e: "🥪", t: "Sandwich" },            
+  { m: 250, e: "🍦", t: "Ice Cream Cone" },      
+  { m: 350, e: "🎫", t: "Movie Ticket" },        
+  { m: 450, e: "🥤", t: "Cold Coffee" },         
+  { m: 600, e: "🍿", t: "Theater Popcorn" },     
+  { m: 800, e: "🍔", t: "Burger Meal" },         
+  { m: 1000, e: "🍕", t: "Medium Pizza" },       
+  { m: 1500, e: "👕", t: "Basic T-Shirt" },      
+  { m: 2000, e: "📖", t: "Bestseller Book" },    
+  { m: 2500, e: "🎧", t: "Wired Earphones" },    
+  { m: 3000, e: "🎒", t: "School Backpack" },    
+  { m: 4000, e: "👖", t: "Denim Jeans" },        
+  { m: 5000, e: "👟", t: "Running Shoes" },      
+  { m: 6000, e: "⌚", t: "Smart Fitness Band" }, 
+  { m: 8000, e: "👔", t: "Formal Shirt" },       
+  { m: 10000, e: "🧳", t: "Trolley Suitcase" },  
+  { m: 12000, e: "🚲", t: "Basic Bicycle" },     
+  { m: 15000, e: "⛺", t: "Camping Tent" },      
+  { m: 20000, e: "🎸", t: "Acoustic Guitar" },   
+  { m: 25000, e: "📱", t: "Budget Smartphone" }, 
+  { m: 30000, e: "📺", t: "32-inch Smart TV" },  
+  { m: 40000, e: "🧺", t: "Washing Machine" },   
+  { m: 50000, e: "🧊", t: "Refrigerator" },      
+  { m: 60000, e: "💍", t: "Gold Ring" },         
+  { m: 70000, e: "💻", t: "Budget Laptop" },     
+  { m: 85000, e: "🌬️", t: "Split Air Conditioner" }, 
+  { m: 100000, e: "🛏️", t: "Queen Size Bed" },   
+  { m: 130000, e: "🛵", t: "Motor Scooter" }, 
+  { m: 160000, e: "📲", t: "Premium Smartphone" },
+  { m: 200000, e: "🖥️", t: "High-End Gaming PC" },
+  { m: 300000, e: "🏍️", t: "Motorcycle" }, 
+  { m: 400000, e: "🛺", t: "Auto Rickshaw" }, 
+  { m: 600000, e: "🚕", t: "Used Taxi" },
+  { m: 800000, e: "🚗", t: "Entry-Level Car" }, 
+  { m: 1200000, e: "🚘", t: "Compact Sedan" }, 
+  { m: 1500000, e: "🛻", t: "Pickup Truck" }, 
+  { m: 2500000, e: "🚙", t: "Blue SUV" }, 
+  { m: 4000000, e: "🚐", t: "Minibus" }, 
+  { m: 8000000, e: "🚚", t: "Delivery Truck" }, 
+  { m: 15000000, e: "🚜", t: "Tractor" }, 
+  { m: 40000000, e: "🏎️", t: "Sports Car" }, 
+  { m: 60000000, e: "🛖", t: "Small Hut" }, 
+  { m: 80000000, e: "🏠", t: "Standard House" }, 
+  { m: 150000000, e: "🏡", t: "House with Garden" }, 
+  { m: 300000000, e: "🏢", t: "Apartment Building" }, 
+  { m: 500000000, e: "🏰", t: "Castle" }, 
+  { m: 1000000000, e: "🏦", t: "Commercial Bank" }, 
+  { m: 5000000000, e: "🚁", t: "Private Helicopter" }, 
+  { m: 10000000000, e: "🛩️", t: "Private Jet" }, 
+  { m: Infinity, e: "🏝️", t: "Private Island" } 
+];
+
+function getVisualTier(p) {
+  return itemTiers.find(tier => p < tier.m) || itemTiers[itemTiers.length - 1];
+}
+
+function syncPriceFromSlider() {
+  const val = Number(priceRange.value); 
+  const fraction = val / 1000;
+  let calc = Math.pow(fraction, 4) * MAX_PRICE_SLIDER;
+  
+  if(calc < 100) calc = Math.round(calc);
+  else if(calc < 1000) calc = Math.round(calc/10)*10;
+  else if(calc < 100000) calc = Math.round(calc/100)*100;
+  else calc = Math.round(calc/1000)*1000;
+  
+  price.value = calc;
+}
+
+function syncPriceFromInput() {
+  const p = Math.max(0, Number(price.value)||0);
+  const cappedP = Math.min(MAX_PRICE_SLIDER, p);
+  const fraction = Math.pow(cappedP / MAX_PRICE_SLIDER, 0.25);
+  priceRange.value = Math.round(fraction * 1000);
+}
+
+function formatTime(totalDays) {
+  if (!isFinite(totalDays) || totalDays <= 0) return "—";
+  const d = Math.ceil(totalDays);
+  if (d < 30) return d + (d === 1 ? " day" : " days");
+  const totalMonths = Math.floor(d / 30);
+  const years = Math.floor(totalMonths / 12);
+  const remMonths = totalMonths % 12;
+  const remDays = d % 30;
+
+  if (years > 0) {
+    let str = years + (years === 1 ? " year" : " years");
+    if (remMonths > 0) str += " " + remMonths + (remMonths === 1 ? " month" : " months");
+    return str;
+  }
+  let str = totalMonths + (totalMonths === 1 ? " month" : " months");
+  if (remDays > 0) str += " " + remDays + (remDays === 1 ? " day" : " days");
+  return str;
+}
+
+function formatYears(days) {
+  if (!isFinite(days)) return "—";
+  const years = days / 365;
+  if(years < 1) return years.toFixed(2) + " years";
+  return years.toFixed(1) + " years";
+}
+
+const money = n => new Intl.NumberFormat("en-IN",{maximumFractionDigits:0}).format(Math.max(0,n));
+const rupee = n => "₹" + money(n);
+
+function animateNumber(el, text){
+  if (el.textContent === text) return;
+  el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); el.textContent = text;
+}
+
+function updateTargetUI() {
+  const isDaily = frequency === "daily";
+  const max = isDaily ? 365 : 120; 
+  const unit = isDaily ? "days" : "months";
+  const singleUnit = isDaily ? "day" : "month";
+  
+  $("targetTimeSuffix").textContent = unit;
+  $("targetTimeUnit").textContent = unit;
+  $("targetTimeMinLabel").textContent = "1 " + singleUnit;
+  $("targetTimeMaxLabel").textContent = max + " " + unit;
+  
+  targetTimeInput.max = max;
+  targetTimeRange.max = max;
+}
+
+function syncSavingFromInput(){
+  let v = Math.max(0, Number(savingInput.value)||0);
+  savingInput.value = v; savingRange.value = v;
+}
+function syncSavingFromSlider(){
+  savingInput.value = Math.round(Number(savingRange.value)||0);
+}
+function syncTargetTimeFromInput(){
+  let max = frequency === "daily" ? 365 : 120;
+  let v = Math.min(max, Math.max(1, Number(targetTimeInput.value)||1));
+  targetTimeInput.value = Math.round(v); targetTimeRange.value = v;
+}
+function syncTargetTimeFromSlider(){
+  targetTimeInput.value = Number(targetTimeRange.value)||1;
+}
+
+function update(){
+  const p = Math.max(0, Number(price.value)||0);
+  
+  $("priceWords").textContent = numberToWords(p);
+
+  if (p < 100) {
+    if (frequency === "monthly") {
+      frequency = "daily";
+      let val = Number(savingInput.value) || 0;
+      savingInput.value = Math.max(1, Math.round(val / 30));
+      savingRange.value = savingInput.value;
+      
+      let tVal = Number(targetTimeInput.value) || 1;
+      targetTimeInput.value = Math.min(365, Math.max(1, tVal * 30));
+      targetTimeRange.value = targetTimeInput.value;
+
+      $("dailyMode").classList.add("active");
+      $("monthlyMode").classList.remove("active");
+      $("savingSuffix").textContent = "/ day";
+      updateTargetUI();
+    }
+    $("monthlyMode").disabled = true; 
+  } else {
+    $("monthlyMode").disabled = false; 
+  }
+  
+  const tier = getVisualTier(p);
+  if (lastEmoji !== tier.e) {
+    vEmoji.textContent = tier.e;
+    vText.textContent = tier.t;
+    vEmoji.classList.remove("jump"); void vEmoji.offsetWidth; vEmoji.classList.add("jump");
+    lastEmoji = tier.e;
+  } else {
+    vText.textContent = tier.t;
+  }
+  
+  let inputValue = Math.max(0, Number(savingRange.value)||0);
+  let currentDaily = 0;
+  let currentMonthly = 0;
+
+  if (mode === "time") {
+    if (frequency === "daily") {
+      savingRange.max = Math.max(10, Math.ceil(p / 30)); 
+      $("rangeMax").textContent = rupee(savingRange.max);
+      currentDaily = inputValue;
+      currentMonthly = inputValue * 30;
+    } else {
+      savingRange.max = Math.max(100, p);
+      $("rangeMax").textContent = rupee(savingRange.max);
+      currentMonthly = inputValue;
+      currentDaily = inputValue / 30;
+    }
+
+    $("savingDisplay").textContent = money(inputValue);
+    $("savingUnit").textContent = frequency === "daily" ? " / day" : " / month";
+
+    const days = currentDaily > 0 ? (p / currentDaily) : Infinity;
+
+    animateNumber($("bigNumber"), days === Infinity ? "—" : formatTime(days));
+    $("resultCaption").textContent = inputValue === 0 ? "Saving amount is zero" : "You can buy it in approximately";
+
+    if (frequency === "daily") {
+      if (days < 30) {
+        $("resultSub").textContent = inputValue === 0 ? "Enter a daily saving amount." : "by saving " + rupee(currentDaily) + " every day";
+      } else {
+        $("resultSub").textContent = inputValue === 0 ? "Enter a daily saving amount." : "by saving " + rupee(currentDaily) + " every day (≈ " + rupee(currentMonthly) + "/month)";
+      }
+    } else {
+      $("resultSub").textContent = inputValue === 0 ? "Enter a monthly saving amount." : "by saving " + rupee(currentMonthly) + " every month";
+    }
+
+    if (days < 30) {
+      $("yearResult").style.display = "none";
+    } else {
+      $("yearResult").style.display = "block";
+      $("yearResult").textContent = days === Infinity ? "— years" : "≈ " + formatYears(days);
+    }
+
+  } else {
+    const timeVal = Math.max(1, Number(targetTimeRange.value)||1);
+    const totalDays = frequency === "daily" ? timeVal : timeVal * 30;
+    
+    const requiredDaily = p / totalDays;
+    const requiredMonthly = requiredDaily * 30;
+    const required = frequency === "daily" ? requiredDaily : requiredMonthly;
+
+    currentDaily = requiredDaily;
+    currentMonthly = requiredMonthly;
+
+    $("targetTimeDisplay").textContent = timeVal;
+    animateNumber($("bigNumber"), rupee(required));
+    $("resultCaption").textContent = "You need to save approximately";
+    
+    if (frequency === "daily") {
+      if (totalDays < 30) {
+        $("resultSub").textContent = rupee(requiredDaily) + " per day";
+      } else {
+        $("resultSub").textContent = rupee(requiredDaily) + " per day (≈ " + rupee(requiredMonthly) + "/month)";
+      }
+    } else {
+      $("resultSub").textContent = rupee(requiredMonthly) + " every month";
+    }
+      
+    if (totalDays < 30) {
+      $("yearResult").style.display = "none";
+    } else {
+      $("yearResult").style.display = "block";
+      $("yearResult").textContent = "Target: " + formatTime(totalDays) + " ≈ " + formatYears(totalDays);
+    }
+  }
+
+  $("mPrice").textContent = rupee(p);
+  $("mDaily").textContent = rupee(currentDaily);
+  $("mMonthly").textContent = rupee(currentMonthly);
+  $("mYearly").textContent = rupee(currentMonthly*12);
+}
+
+function setMode(newMode){
+  mode=newMode;
+  $("timeMode").classList.toggle("active",mode==="time");
+  $("targetMode").classList.toggle("active",mode==="target");
+  $("timePanel").style.display=mode==="time"?"block":"none";
+  $("targetPanel").style.display=mode==="target"?"block":"none";
+  update();
+}
+
+$("monthlyMode").onclick = () => {
+  if (frequency !== "monthly" && !$("monthlyMode").disabled) {
+    frequency = "monthly";
+    let val = Number(savingInput.value) || 0;
+    savingInput.value = Math.round(val * 30); 
+    savingRange.value = savingInput.value;
+    
+    let tVal = Number(targetTimeInput.value) || 1;
+    targetTimeInput.value = Math.max(1, Math.round(tVal / 30));
+    targetTimeRange.value = targetTimeInput.value;
+
+    $("monthlyMode").classList.add("active");
+    $("dailyMode").classList.remove("active");
+    $("savingSuffix").textContent = "/ month";
+    updateTargetUI();
+    update();
+  }
+};
+
+$("dailyMode").onclick = () => {
+  if (frequency !== "daily") {
+    frequency = "daily";
+    let val = Number(savingInput.value) || 0;
+    savingInput.value = Math.round(val / 30); 
+    savingRange.value = savingInput.value;
+    
+    let tVal = Number(targetTimeInput.value) || 1;
+    targetTimeInput.value = Math.min(365, Math.max(1, tVal * 30));
+    targetTimeRange.value = targetTimeInput.value;
+
+    $("dailyMode").classList.add("active");
+    $("monthlyMode").classList.remove("active");
+    $("savingSuffix").textContent = "/ day";
+    updateTargetUI();
+    update();
+  }
+};
+
+$("timeMode").onclick=()=>setMode("time");
+$("targetMode").onclick=()=>setMode("target");
+
+price.addEventListener("input", () => { syncPriceFromInput(); update(); });
+priceRange.addEventListener("input", () => { syncPriceFromSlider(); update(); });
+savingInput.addEventListener("input",()=>{ syncSavingFromInput(); update(); });
+savingRange.addEventListener("input",()=>{ syncSavingFromSlider(); update(); });
+targetTimeInput.addEventListener("input",()=>{ syncTargetTimeFromInput(); update(); });
+targetTimeRange.addEventListener("input",()=>{ syncTargetTimeFromSlider(); update(); });
+
+$("resetBtn").onclick=()=>{
+  price.value=239000; 
+  frequency="monthly";
+  savingRange.value=15000; savingInput.value=15000;
+  targetTimeRange.value=12; targetTimeInput.value=12;
+  $("monthlyMode").classList.add("active");
+  $("dailyMode").classList.remove("active");
+  $("savingSuffix").textContent = "/ month";
+  updateTargetUI();
+  syncPriceFromInput();
+  setMode("time");
+};
+
+$("shareBtn").onclick=async()=>{
+  const p = Number(price.value)||0;
+  const tier = getVisualTier(p);
+  let text;
+  if(mode==="time"){
+    const sv = Number(savingRange.value)||0;
+    const daily = frequency === "daily" ? sv : sv/30;
+    const days = daily > 0 ? p/daily : Infinity;
+    const timeStr = formatTime(days);
+    text = frequency === "daily"
+      ? `My buying plan for a ${tier.t}: ${rupee(p)}. I plan to save ${rupee(daily)} per day, so it will take ${timeStr}.`
+      : `My buying plan for a ${tier.t}: ${rupee(p)}. I plan to save ${rupee(sv)}/month, so it will take ${timeStr}.`;
+  }else{
+    const tVal = Number(targetTimeRange.value)||1;
+    const totalDays = frequency === "daily" ? tVal : tVal * 30;
+    const req = p/(frequency==="daily"?tVal:tVal);
+    text = frequency === "daily"
+      ? `My buying plan for a ${tier.t}: ${rupee(p)} in ${tVal} days means saving about ${rupee(req)}/day.`
+      : `My buying plan for a ${tier.t}: ${rupee(p)} in ${tVal} months means saving about ${rupee(req)}/month.`;
+  }
+  try{
+    await navigator.clipboard.writeText(text);
+    $("shareBtn").textContent="✓ Copied!";
+    setTimeout(()=>$("shareBtn").textContent="Share plan",1400);
+  }catch{
+    alert(text);
+  }
+};
+
+// Initial setup
+updateTargetUI();
+syncPriceFromInput();
+syncSavingFromInput();
+syncTargetTimeFromInput();
+update();
+</script>
+</body>
+</html>
